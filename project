@@ -1,0 +1,64 @@
+service: automation                # Updated service name
+
+provider:
+  name: aws                        # Cloud provider
+  runtime: nodejs14.x             # Runtime environment
+  region: us-east-1                # AWS region
+  stage: dev                       # Deployment stage
+
+functions:
+  processRequest:                 # Function to process incoming requests
+    handler: handler.processRequest # Handler for the function
+    events:
+      - http:
+          path: process           # HTTP endpoint for processing requests
+          method: post            # Method to invoke the function
+          cors: true              # Enable CORS for API Gateway
+
+  getStatus:                      # Function to get the status of the service
+    handler: handler.getStatus    # Handler for the function
+    events:
+      - http:
+          path: status            # HTTP endpoint to get status
+          method: get             # Method to invoke the function
+          cors: true              # Enable CORS for API Gateway
+
+resources:                        # Define additional AWS resources
+  Resources:
+    MyS3Bucket:                   # Example S3 bucket for storing files
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: automation-bucket # Unique bucket name
+
+    MyDynamoDBTable:              # Example DynamoDB table to store data
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: AiRequests     # Name of the table
+        AttributeDefinitions:
+          - AttributeName: id     # Primary key attribute
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH          # Partition key
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+
+plugins:
+  - serverless-offline            # Plugin for local development
+
+custom:
+  # Custom variables can be defined here
+  myCustomVariable: someValue
+
+# IAM role configuration to allow access to S3 and DynamoDB
+iamRoleStatements:
+  - Effect: Allow
+    Action:
+      - s3:PutObject
+      - s3:GetObject
+      - dynamodb:PutItem
+      - dynamodb:GetItem
+    Resource:
+      - arn:aws:s3:::automation-bucket/*     # Access to the S3 bucket
+      - arn:aws:dynamodb:us-east-1:YOUR_ACCOUNT_ID:table/AiRequests # Access to the DynamoDB table
